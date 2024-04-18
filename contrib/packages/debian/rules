@@ -1,9 +1,0 @@
-#!/usr/bin/make -f
-# -*- makefile -*-
-
-clean::
-	rm -rf build build-stamp configure-stamp build/ MANIFEST
-	dh_clean
-
-%:
-	dh $@ --with python3 --buildsystem=pybuild

@@ -1,0 +1,12 @@
+avocado source: debian-watch-does-not-check-openpgp-signature [debian/watch]
+avocado source: source-is-missing [optional_plugins/html/avocado_result_html/templates/bootstrap.min.js]
+avocado source: source-is-missing [optional_plugins/html/avocado_result_html/templates/datatables.min.js]
+avocado source: source-is-missing [optional_plugins/html/avocado_result_html/templates/jquery.min.js]
+avocado source: source-contains-prebuilt-javascript-object *
+avocado source: very-long-line-length-in-source-file *
+avocado source: uses-deprecated-python-stdlib crypt (deprecated in Python 3.11, removed in Python 3.13) [avocado/utils/genio.py:27]
+avocado source: uses-deprecated-python-stdlib uu (deprecated in Python 3.11, removed in Python 3.13) [avocado/core/nrunner/task.py:7]
+avocado source: uses-deprecated-python-stdlib uu (deprecated in Python 3.11, removed in Python 3.13) [avocado/core/suite.py:18]
+avocado source: uses-deprecated-python-stdlib uu (deprecated in Python 3.11, removed in Python 3.13) [avocado/plugins/spawners/podman.py:8]
+avocado source: uses-deprecated-python-stdlib uu (deprecated in Python 3.11, removed in Python 3.13) [avocado/utils/asset.py:30]
+avocado source: uses-deprecated-python-stdlib uu (deprecated in Python 3.11, removed in Python 3.13) [avocado/utils/vmimage.py:23]
