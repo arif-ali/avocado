@@ -487,10 +487,7 @@ class FDDrainer:
                 if not has_io:
                     # Don't read unless there are new data available
                     continue
-            try:
-                tmp = os.read(self.fd, 8192)
-            except OSError:
-                break
+            tmp = os.read(self.fd, 8192)
             if not tmp:
                 break
             self.data.write(tmp)

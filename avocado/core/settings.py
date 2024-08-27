@@ -222,10 +222,7 @@ class ConfigOption:
             return []
 
         if isinstance(value, str):
-            try:
-                return ast.literal_eval(value)
-            except SyntaxError:
-                pass
+            return ast.literal_eval(value)
 
         if isinstance(value, list):
             return value
@@ -631,7 +628,7 @@ class Settings:
             value = value[0]
             try:
                 self.update_option(namespace, value, convert=True)
-            except (SyntaxError, ValueError):
+            except SyntaxError:
                 raise SyntaxError(
                     f"Syntax error in config file {path}, please check the value {value} "
                 )

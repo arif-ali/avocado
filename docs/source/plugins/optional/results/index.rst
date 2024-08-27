@@ -18,4 +18,3 @@ where these examples are included. ::
    html
    result_upload
    resultsdb
-   mail

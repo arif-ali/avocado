@@ -220,7 +220,7 @@ class SysInfoTest(PreTest, PostTest):
             return []
         sysinfo_config = sysinfo.gather_collectibles_config(suite_config)
         return [
-            Runnable(
+            Runnable.from_avocado_config(
                 "sysinfo",
                 "pre",
                 config=suite_config,
@@ -237,7 +237,7 @@ class SysInfoTest(PreTest, PostTest):
         sysinfo_config = sysinfo.gather_collectibles_config(suite_config)
         return [
             (
-                Runnable(
+                Runnable.from_avocado_config(
                     "sysinfo",
                     "post",
                     config=suite_config,
@@ -249,7 +249,7 @@ class SysInfoTest(PreTest, PostTest):
                 ["pass"],
             ),
             (
-                Runnable(
+                Runnable.from_avocado_config(
                     "sysinfo",
                     "post",
                     config=suite_config,

@@ -39,44 +39,34 @@ class TAPRunner(ExecTestRunner):
     def _get_tap_result(stdout):
         parser = TapParser(io.StringIO(stdout.decode()))
         result = "error"
-        fail_reason = None
         for event in parser.parse():
             if isinstance(event, TapParser.Bailout):
                 result = "error"
                 break
             elif isinstance(event, TapParser.Error):
                 result = "error"
-                fail_reason = f"Tap format error: {event.message}"
                 break
             elif isinstance(event, TapParser.Plan):
                 if event.skipped:
                     result = "skip"
                     break
             elif isinstance(event, TapParser.Test):
-                if event.result == TestResult.FAIL:
+                if event.result in (TestResult.XPASS, TestResult.FAIL):
                     result = "fail"
-                    fail_reason = event.explanation
                     break
                 elif event.result == TestResult.SKIP:
                     result = "skip"
                     break
-                elif event.result == TestResult.XPASS:
-                    result = "warn"
-                    if event.name:
-                        tap_test_id = f"{event.number} ({event.name})"
-                    else:
-                        tap_test_id = f"{event.number}"
-                    fail_reason = f"TODO test {tap_test_id} unexpectedly passed."
-                    break
                 else:
                     result = "pass"
-        return result, fail_reason
+        return result
 
     def _process_final_status(
         self, process, runnable, stdout=None, stderr=None
     ):  # pylint: disable=W0613
-        result, fail_reason = self._get_tap_result(stdout)
-        return FinishedMessage.get(result, fail_reason, returncode=process.returncode)
+        return FinishedMessage.get(
+            self._get_tap_result(stdout), returncode=process.returncode
+        )
 
 
 class RunnerApp(BaseRunnerApp):
