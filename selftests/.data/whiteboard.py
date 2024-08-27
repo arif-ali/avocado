@@ -1,12 +1,9 @@
-#!/usr/bin/env python3
-
 import base64
 
-from avocado import Test, main
+from avocado import Test
 
 
 class WhiteBoard(Test):
-
     """
     Simple test that saves test custom data to the test whiteboard
 
@@ -36,7 +33,3 @@ class WhiteBoard(Test):
         for _ in range(0, iterations):
             result += data
         self.whiteboard = base64.encodebytes(result.encode()).decode("ascii")
-
-
-if __name__ == "__main__":
-    main()

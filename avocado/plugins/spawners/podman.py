@@ -16,7 +16,7 @@ from avocado.core.teststatus import STATUSES_NOT_OK
 from avocado.core.version import VERSION
 from avocado.utils import distro
 from avocado.utils.asset import Asset
-from avocado.utils.podman import Podman, PodmanException
+from avocado.utils.podman import AsyncPodman, PodmanException
 
 LOG = logging.getLogger(__name__)
 
@@ -63,6 +63,18 @@ class PodmanSpawnerInit(Init):
 
         settings.register_option(
             section=section, key="avocado_spawner_egg", help_msg=help_msg, default=None
+        )
+
+        help_msg = (
+            "Prefix to use when tagging images that are created by the "
+            "Podman spawner."
+        )
+
+        settings.register_option(
+            section=section,
+            key="image_tag_prefix",
+            help_msg=help_msg,
+            default="avocado_generated",
         )
 
 
@@ -138,6 +150,20 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
             f'output received "{out}" does not match expected output'
         )
 
+    def is_operational(self):
+        try:
+            _ = self.podman_version
+        except PodmanException as ex:
+            LOG.error(ex)
+            return False
+
+        if self.podman_version[0] >= 3:
+            return True
+        LOG.error(
+            f"The podman binary f{self.podman_bin} did not report a suitable version (>= 3.0)"
+        )
+        return False
+
     @property
     def podman_version(self):
         if self._podman_version == (None, None, None):
@@ -149,7 +175,7 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
         if self._podman is None:
             podman_bin = self.config.get("spawner.podman.bin")
             try:
-                self._podman = Podman(podman_bin)
+                self._podman = AsyncPodman(podman_bin)
             except PodmanException as ex:
                 LOG.error(ex)
         return self._podman
@@ -397,6 +423,22 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
             return False
         return True
 
+    async def _create_and_tag_image(self, runtime_task):
+        _, stdout, _ = await self.podman.execute(
+            "commit", "-q", runtime_task.spawner_handle
+        )
+        image_id = stdout.decode().strip()
+        tag_prefix = self.config.get("spawner.podman.image_tag_prefix")
+        base_image = self.config.get("spawner.podman.image")
+        kind = runtime_task.task.runnable.kind
+        name = runtime_task.task.runnable.kwargs.get("name")
+        tag = f"{tag_prefix}_{base_image}_{kind}_{name}".replace(":", "_")
+        try:
+            _, _, _ = await self.podman.execute("tag", image_id, tag)
+        except PodmanException as ex:
+            LOG.warning("Could not tag image %s with %s: %s", image_id, tag, ex)
+        return image_id
+
     async def update_requirement_cache(
         self, runtime_task, result
     ):  # pylint: disable=W0221
@@ -404,30 +446,27 @@ class PodmanSpawner(DeploymentSpawner, SpawnerMixin):
         if result in STATUSES_NOT_OK:
             cache.delete_environment(self.environment, environment_id)
             return
-        _, stdout, _ = await self.podman.execute(
-            "commit", "-q", runtime_task.spawner_handle
-        )
-        container_id = stdout.decode().strip()
-        cache.update_environment(self.environment, environment_id, container_id)
+        image_id = await self._create_and_tag_image(runtime_task)
+        cache.update_environment(self.environment, environment_id, image_id)
         cache.update_requirement_status(
             self.environment,
-            container_id,
+            image_id,
             runtime_task.task.runnable.kind,
             runtime_task.task.runnable.kwargs.get("name"),
             True,
         )
 
     async def save_requirement_in_cache(self, runtime_task):  # pylint: disable=W0221
-        container_id = str(uuid.uuid4())
+        image_id = str(uuid.uuid4())
         _, requirements = self._get_image_from_cache(runtime_task)
         if requirements:
             for requirement_type, requirement in requirements:
                 cache.set_requirement(
-                    self.environment, container_id, requirement_type, requirement
+                    self.environment, image_id, requirement_type, requirement
                 )
         cache.set_requirement(
             self.environment,
-            container_id,
+            image_id,
             runtime_task.task.runnable.kind,
             runtime_task.task.runnable.kwargs.get("name"),
             False,

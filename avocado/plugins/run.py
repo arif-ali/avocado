@@ -43,7 +43,6 @@ class RunInit(Init):
 
 
 class Run(CLICmd):
-
     """
     Implements the avocado 'run' subcommand
     """
@@ -169,6 +168,19 @@ class Run(CLICmd):
             default=None,
             metavar="CATEGORY",
             long_arg="--job-category",
+        )
+
+        help_msg = (
+            "Path to the json file with list of dependencies needed for each test."
+        )
+        settings.register_option(
+            section="job.run",
+            key="dependency",
+            help_msg=help_msg,
+            parser=parser,
+            default=None,
+            metavar="FILE",
+            long_arg="--job-dependency",
         )
 
         settings.add_argparser_to_option(

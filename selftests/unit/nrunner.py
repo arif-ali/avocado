@@ -77,6 +77,23 @@ class RunnableTest(unittest.TestCase):
         self.assertEqual(runnable.args, ("/etc/profile",))
         self.assertEqual(runnable.kwargs, {"TERM": "vt3270"})
 
+    def test_recipe_config(self):
+        open_mocked = unittest.mock.mock_open(
+            read_data=(
+                '{"kind": "exec-test", "uri": "/bin/sh", '
+                '"args": ["/etc/profile"], '
+                '"config": {"runner.identifier_format": "{uri}-{args[0]}"}}'
+            )
+        )
+        with unittest.mock.patch("builtins.open", open_mocked):
+            runnable = Runnable.from_recipe("fake_path")
+        configuration_used = ["run.keep_tmp", "runner.exectest.exitcodes.skip"]
+        for conf in configuration_used:
+            self.assertIn(conf, runnable.config)
+        self.assertEqual(
+            runnable.config.get("runner.identifier_format"), "{uri}-{args[0]}"
+        )
+
     def test_identifier_args(self):
         config = {"runner.identifier_format": "{uri}-{args[0]}"}
         runnable = Runnable("exec-test", "uri", "arg1", "arg2", config=config)
@@ -85,14 +102,30 @@ class RunnableTest(unittest.TestCase):
     def test_runnable_command_args(self):
         runnable = Runnable("noop", "uri", "arg1", "arg2")
         actual_args = runnable.get_command_args()
-        exp_args = ["-k", "noop", "-u", "uri", "-a", "arg1", "-a", "arg2"]
+        exp_args = [
+            "-k",
+            "noop",
+            "-u",
+            "uri",
+            "-c",
+            '{"runner.identifier_format": "{uri}"}',
+            "-a",
+            "arg1",
+            "-a",
+            "arg2",
+        ]
         self.assertEqual(actual_args, exp_args)
 
     def test_get_dict(self):
         runnable = Runnable("noop", "_uri_", "arg1", "arg2")
         self.assertEqual(
             runnable.get_dict(),
-            {"kind": "noop", "uri": "_uri_", "args": ("arg1", "arg2"), "config": {}},
+            {
+                "kind": "noop",
+                "uri": "_uri_",
+                "args": ("arg1", "arg2"),
+                "config": {"runner.identifier_format": "{uri}"},
+            },
         )
 
     def test_get_json(self):
@@ -100,7 +133,7 @@ class RunnableTest(unittest.TestCase):
         expected = (
             '{"kind": "noop", '
             '"uri": "_uri_", '
-            '"config": {}, '
+            '"config": {"runner.identifier_format": "{uri}"}, '
             '"args": ["arg1", "arg2"]}'
         )
         self.assertEqual(runnable.get_json(), expected)
@@ -321,18 +354,18 @@ class Runner(unittest.TestCase):
         runner_klass = runnable.pick_runner_class()
         runner = runner_klass()
         results = [status for status in runner.run(runnable)]
-        if sys.version_info < (3, 12, 1):
-            output1 = (
-                b"----------------------------------------------------------------------\n"
-                b"Ran 1 test in "
-            )
-            output2 = b"s\n\nOK (skipped=1)\n"
-        else:
+        if sys.version_info == (3, 12, 1):
             output1 = (
                 b"----------------------------------------------------------------------\n"
                 b"Ran 0 tests in "
             )
             output2 = b"\n\nNO TESTS RAN (skipped=1)\n"
+        else:
+            output1 = (
+                b"----------------------------------------------------------------------\n"
+                b"Ran 1 test in "
+            )
+            output2 = b"s\n\nOK (skipped=1)\n"
         output = results[-2]
         result = results[-1]
         self.assertEqual(result["status"], "finished")

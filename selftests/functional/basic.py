@@ -13,7 +13,6 @@ from avocado.utils import path as utils_path
 from avocado.utils import process, script
 from selftests.utils import (
     AVOCADO,
-    BASEDIR,
     TestCaseTmpDir,
     python_module_available,
     skipOnLevelsInferiorThan,
@@ -97,6 +96,18 @@ from avocado import Test
 class My(Test):
     def test(self):
         logging.getLogger("some.other.logger").info("SHOULD BE ON debug.log")
+"""
+
+EXEC_ENV_VARIABLE_TEST = """#!/bin/bash
+if [[ -n "${TEST_ENV}" ]]; then
+    exit 1
+fi
+"""
+
+EXEC_DEFAULT_ENV_VARIABLE_TEST = """#!/bin/bash
+if [[ -n "${AVOCADO_VERSION}" ]]; then
+    exit 1
+fi
 """
 
 
@@ -212,7 +223,7 @@ class RunnerOperationTest(TestCaseTmpDir):
             f"--max-parallel-tasks=1"
         )
         result = process.run(cmd_line, ignore_status=True)
-        self.assertIn(b"Interrupting job (failfast).", result.stdout)
+        self.assertIn(b"Interrupting job (failfast).", result.stderr)
         self.assertIn(b"PASS 1 | ERROR 0 | FAIL 1 | SKIP 1", result.stdout)
         expected_rc = exit_codes.AVOCADO_TESTS_FAIL | exit_codes.AVOCADO_JOB_INTERRUPTED
         self.assertEqual(
@@ -230,7 +241,7 @@ class RunnerOperationTest(TestCaseTmpDir):
             f"--max-parallel-tasks=1"
         )
         result = process.run(cmd_line, ignore_status=True)
-        self.assertIn(b"Interrupting job (failfast).", result.stdout)
+        self.assertIn(b"Interrupting job (failfast).", result.stderr)
         self.assertIn(b"PASS 1 | ERROR 1 | FAIL 0 | SKIP 1", result.stdout)
         expected_rc = exit_codes.AVOCADO_TESTS_FAIL | exit_codes.AVOCADO_JOB_INTERRUPTED
         self.assertEqual(
@@ -819,7 +830,9 @@ class RunnerOperationTest(TestCaseTmpDir):
             self.assertTrue(os.path.exists(file_path))
             with open(file_path, encoding="utf-8") as file:
                 stream = file.read()
-                self.assertIn("matplotlib __init__         L0337 DEBUG|", stream)
+                self.assertTrue(
+                    re.match(r"matplotlib __init__         L[0-9]* DEBUG|", stream)
+                )
 
         log_dir = os.path.join(self.tmpdir.name, "latest")
         test_log_dir = os.path.join(
@@ -997,6 +1010,24 @@ class RunnerExecTest(TestCaseTmpDir):
         )
         self.fail_script.save()
 
+    def _test_env(self, configuration, expected_rc, test_file):
+        with script.TemporaryScript("exec_env_var.sh", test_file) as tst:
+            res = process.run(
+                f"env TEST_ENV=test avocado-runner-exec-test runnable-run -k exec-test -u {tst}",
+            )
+            result = res.stdout_text.split("\n")[-2]
+            self.assertIn(
+                "'returncode': 1",
+                result,
+                "Script unexpectedly passed with environment variable set.",
+            )
+
+            res = process.run(
+                f"env TEST_ENV=test avocado-runner-exec-test runnable-run -k exec-test -u {tst} {configuration}"
+            )
+            result = res.stdout_text.split("\n")[-2]
+            self.assertIn(f"'returncode': {expected_rc}", result)
+
     def test_exec_test_pass(self):
         cmd_line = (
             f"{AVOCADO} run --job-results-dir {self.tmpdir.name} "
@@ -1094,6 +1125,24 @@ class RunnerExecTest(TestCaseTmpDir):
             f"Avocado did not return rc {expected_rc}:\n{result}",
         )
 
+    @skipUnlessPathExists("/bin/bash")
+    def test_env_var_disable(self):
+        self._test_env("TEST_ENV=json:null", 0, EXEC_ENV_VARIABLE_TEST)
+
+    @skipUnlessPathExists("/bin/sh")
+    def test_env_clear_system(self):
+        self._test_env(
+            '-c \'{"runner.exectest.clear_env": "system"}\'', 0, EXEC_ENV_VARIABLE_TEST
+        )
+
+    @skipUnlessPathExists("/bin/sh")
+    def test_env_clear_all(self):
+        self._test_env(
+            '-c \'{"runner.exectest.clear_env": "all"}\'',
+            0,
+            EXEC_DEFAULT_ENV_VARIABLE_TEST,
+        )
+
     def tearDown(self):
         self.pass_script.remove()
         self.fail_script.remove()
@@ -1121,36 +1170,6 @@ class RunnerReferenceFromConfig(TestCaseTmpDir):
             expected_rc,
             f"Avocado did not return rc {expected_rc}:\n{result}",
         )
-
-    def tearDown(self):
-        super().tearDown()
-        self.config_file.remove()
-
-
-class RunnerExecTestFailureFields(TestCaseTmpDir):
-    def setUp(self):
-        super().setUp()
-        self.config_file = script.TemporaryScript(
-            "avocado.conf",
-            "[simpletests.status]\nfailure_fields = ['stdout', 'stderr']\n",
-        )
-        self.config_file.save()
-
-    def test_exec_test_failure_fields(self):
-        fail_test = os.path.join(BASEDIR, "examples", "tests", "failtest.sh")
-        cmd_line = (
-            f"{AVOCADO} --config {self.config_file.path} run "
-            f"--job-results-dir {self.tmpdir.name} "
-            f"--disable-sysinfo -- {fail_test}"
-        )
-        result = process.run(cmd_line, ignore_status=True)
-        expected_rc = exit_codes.AVOCADO_TESTS_FAIL
-        self.assertEqual(
-            result.exit_status,
-            expected_rc,
-            f"Avocado did not return rc {expected_rc}:\n{result}",
-        )
-        self.assertNotIn("Exited with status: '1'", result.stdout_text)
 
     def tearDown(self):
         super().tearDown()

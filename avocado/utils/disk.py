@@ -121,9 +121,21 @@ def get_disks():
     :returns: a list of paths to the physical disks on the system
     :rtype: list of str
     """
-    json_result = process.run("lsblk --json --paths --inverse")
-    json_data = json.loads(json_result.stdout_text)
-    return [str(disk["name"]) for disk in json_data["blockdevices"]]
+    try:
+        json_result = process.run("lsblk --json --paths --inverse")
+    except process.CmdError as ce:
+        raise DiskError(f"Error occurred while executing lsblk command: {ce}")
+    try:
+        json_data = json.loads(json_result.stdout_text)
+    except json.JSONDecodeError as je:
+        raise DiskError(f"Error occurred while parsing JSON data: {je}")
+    disks = []
+    for device in json_data["blockdevices"]:
+        disks.append(device["name"])
+        if "children" in device:
+            for child in device["children"]:
+                disks.append(child["name"])
+    return disks
 
 
 def get_all_disk_paths():
@@ -438,3 +450,44 @@ def get_disk_partitions(disk):
         for line in partitions_op.split("\n")
         if line.startswith(disk) and "Extended" not in line
     ]
+
+
+def get_io_scheduler_list(device_name):
+    """
+    Returns io scheduler available for the IO Device
+    :param device_name: Device  name example like sda
+    :return: list of IO scheduler
+    """
+    names = open(__sched_path(device_name), "r", encoding="utf-8").read()
+    return names.translate(str.maketrans("[]", " ")).split()
+
+
+def get_io_scheduler(device_name):
+    """
+    Return io scheduler name which is set currently  for device
+    :param device_name: Device  name example like sda
+    :return: IO scheduler
+    :rtype :  str
+    """
+    return re.split(
+        r"[\[\]]", open(__sched_path(device_name), "r", encoding="utf-8").read()
+    )[1]
+
+
+def __sched_path(device_name):
+
+    file_path = f"/sys/block/{device_name}/queue/scheduler"
+    return file_path
+
+
+def set_io_scheduler(device_name, name):
+    """
+    Set io scheduler to a device
+    :param device_name:  Device  name example like sda
+    :param name: io scheduler name
+    """
+    if name not in get_io_scheduler_list(device_name):
+        raise DiskError(f"No such IO scheduler: {name}")
+
+    with open(__sched_path(device_name), "w", encoding="utf-8") as fp:
+        fp.write(name)

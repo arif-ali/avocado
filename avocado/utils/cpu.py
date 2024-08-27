@@ -215,7 +215,7 @@ def get_arch():
         (b"^hart\\s*: 1$", "riscv"),
     ]
     cpuinfo = _get_info()
-    for (pattern, arch) in cpu_table:
+    for pattern, arch in cpu_table:
         if _list_matches(cpuinfo, pattern):
             if arch == "arm":
                 # ARM is a special situation, which matches both 32 bits
@@ -238,7 +238,13 @@ def get_family():
     arch = get_arch()
     if arch == "x86_64" or arch == "i386":
         if get_vendor() == "amd":
-            raise NotImplementedError
+            cpu_info = _get_info()
+            pattern = r"cpu family\s*:"
+            for line in cpu_info:
+                line = line.decode("utf-8")
+                if re.search(pattern, line):
+                    family = int(line.split(":")[1])
+                    return family
         try:
             # refer below links for microarchitectures names
             # https://en.wikipedia.org/wiki/List_of_Intel_CPU_microarchitectures
@@ -274,6 +280,54 @@ def get_family():
     else:
         raise NotImplementedError
     return family
+
+
+def get_model():
+    """
+    Get model of cpu
+    """
+    arch = get_arch()
+    if arch == "x86_64":
+        cpu_info = _get_info()
+        pattern = r"model\s*:"
+        for line in cpu_info:
+            line = line.decode("utf-8")
+            if re.search(pattern, line):
+                model = int(line.split(":")[1])
+                return model
+    else:
+        raise NotImplementedError
+
+
+def get_x86_amd_zen(family=None, model=None):
+    """
+    :param family: AMD family
+    :type family: int
+    :param model: AMD model
+    :type model: int
+
+    :return: AMD Zen
+    :rtype: int
+    """
+
+    x86_amd_zen = {
+        0x17: {
+            1: [(0x00, 0x2F), (0x50, 0x5F)],
+            2: [(0x30, 0x4F), (0x60, 0x7F), (0x90, 0x91), (0xA0, 0xAF)],
+        },
+        0x19: {3: [(0x00, 0x0F), (0x20, 0x5F)], 4: [(0x10, 0x1F), (0x60, 0xAF)]},
+        0x1A: {5: [(0x00, 0x0F), (0x20, 0x2F), (0x40, 0x4F), (0x70, 0x7F)]},
+    }
+    if not family:
+        family = get_family()
+    if not model:
+        model = get_model()
+
+    for _family, _zen_model in x86_amd_zen.items():
+        if _family == family:
+            for _zen, _model in _zen_model.items():
+                if any(lower <= model <= upper for (lower, upper) in _model):
+                    return _zen
 
 
 def online_list():
@@ -577,17 +631,27 @@ def lscpu():
     :physical chips:
     :chips: physical sockets * physical chips
     """
-    output = process.run("lscpu")
+    output = process.run("LANG=en_US.UTF-8;lscpu", shell=True)
     res = {}
     for line in output.stdout.decode("utf-8").split("\n"):
+        if "Physical cores/chip:" in line:
+            res["cores_per_chip"] = int(line.split(":")[1].strip())
         if "Core(s) per socket:" in line:
-            res["cores"] = int(line.split(":")[1].strip())
+            res["virtual_cores"] = int(line.split(":")[1].strip())
         if "Physical sockets:" in line:
             res["physical_sockets"] = int(line.split(":")[1].strip())
         if "Physical chips:" in line:
             res["physical_chips"] = int(line.split(":")[1].strip())
     if "physical_sockets" in res and "physical_chips" in res:
         res["chips"] = res["physical_sockets"] * res["physical_chips"]
+    if (
+        "physical_sockets" in res
+        and "physical_chips" in res
+        and "cores_per_chip" in res
+    ):
+        res["physical_cores"] = (
+            res["physical_sockets"] * res["physical_chips"] * res["cores_per_chip"]
+        )
     return res
 
 
