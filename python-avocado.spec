@@ -27,7 +27,7 @@
 
 Summary: Framework with tools and libraries for Automated Testing
 Name: python-avocado
-Version: 106.0
+Version: 107.0
 Release: 1%{?gitrel}%{?dist}
 License: GPLv2+ and GPLv2 and MIT
 URL: https://avocado-framework.github.io/
@@ -135,6 +135,9 @@ popd
 pushd optional_plugins/result_upload
 %py3_build
 popd
+pushd optional_plugins/mail
+%py3_build
+popd
 %if ! 0%{?rhel}
 pushd optional_plugins/spawner_remote
 %py3_build
@@ -173,6 +176,9 @@ pushd optional_plugins/varianter_cit
 %py3_install
 popd
 pushd optional_plugins/result_upload
+%py3_install
+popd
+pushd optional_plugins/mail
 %py3_install
 popd
 %if ! 0%{?rhel}
@@ -239,6 +245,7 @@ PATH=%{buildroot}%{_bindir}:%{buildroot}%{_libexecdir}/avocado:$PATH \
 %exclude %{python3_sitelib}/avocado_varianter_pict*
 %exclude %{python3_sitelib}/avocado_varianter_cit*
 %exclude %{python3_sitelib}/avocado_result_upload*
+%exclude %{python3_sitelib}/avocado_result_mail*
 %exclude %{python3_sitelib}/avocado_framework_plugin_result_html*
 %exclude %{python3_sitelib}/avocado_framework_plugin_resultsdb*
 %exclude %{python3_sitelib}/avocado_framework_plugin_varianter_yaml_to_mux*
@@ -247,6 +254,7 @@ PATH=%{buildroot}%{_bindir}:%{buildroot}%{_libexecdir}/avocado:$PATH \
 %exclude %{python3_sitelib}/avocado_framework_plugin_golang*
 %exclude %{python3_sitelib}/avocado_framework_plugin_ansible*
 %exclude %{python3_sitelib}/avocado_framework_plugin_result_upload*
+%exclude %{python3_sitelib}/avocado_framework_plugin_result_mail*
 %exclude %{python3_sitelib}/avocado_framework_plugin_spawner_remote*
 %exclude %{python3_sitelib}/tests*
 
@@ -396,6 +404,19 @@ a dedicated sever.
 %{python3_sitelib}/avocado_result_upload*
 %{python3_sitelib}/avocado_framework_plugin_result_upload*
 
+%package -n python3-avocado-plugins-result-mail
+Summary: Avocado Mail Notification for Jobs
+License: GPLv2+
+Requires: python3-avocado == %{version}-%{release}
+
+%description -n python3-avocado-plugins-result-mail
+The Mail result plugin enables you to receive email notifications
+for job start and completion events within the Avocado testing framework.
+
+%files -n python3-avocado-plugins-result-mail
+%{python3_sitelib}/avocado_result_mail*
+%{python3_sitelib}/avocado_framework_plugin_result_mail*
+
 %if ! 0%{?rhel}
 %package -n python3-avocado-plugins-spawner-remote
 Summary: Avocado Plugin to spawn tests on a remote host
@@ -444,6 +465,9 @@ Again Shell code (and possibly other similar shells).
 %{_libexecdir}/avocado*
 
 %changelog
+* Mon Sep 02 2024 Cleber Rosa <crosa@redhat.com> - 107.0-1
+- New release
+
 * Sat Jun 29 2024 Cleber Rosa <crosa@redhat.com> - 106.0-1
 - New release
 
