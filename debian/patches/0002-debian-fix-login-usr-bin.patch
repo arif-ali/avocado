@@ -1,0 +1,13 @@
+diff --git a/selftests/unit/utils/software_manager.py b/selftests/unit/utils/software_manager.py
+index e034b05e..2d39b629 100644
+--- a/selftests/unit/utils/software_manager.py
++++ b/selftests/unit/utils/software_manager.py
+@@ -18,7 +18,7 @@ def apt_supported_distro():
+ class Apt(unittest.TestCase):
+     def test_provides(self):
+         sm = manager.SoftwareManager()
+-        self.assertEqual(sm.provides("/bin/login"), "login")
++        self.assertEqual(sm.provides("/usr/bin/login"), "login")
+         self.assertTrue(isinstance(sm.backend, backends.apt.AptBackend))
+ 
+ 
