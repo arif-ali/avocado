@@ -76,12 +76,19 @@ class Clean(clean):
         cleaning_list += list(Path("./docs/source/api/").rglob("*.rst"))
 
         for e in cleaning_list:
-            if not os.path.exists(e):
-                continue
-            if os.path.isfile(e):
-                os.remove(e)
-            if os.path.isdir(e):
-                shutil.rmtree(e)
+            try:
+                if not os.path.exists(e):
+                    continue
+                if os.path.isfile(e):
+                    os.remove(e)
+                if os.path.isdir(e):
+                    shutil.rmtree(e)
+            except FileNotFoundError:
+                print(f"File not found: {e}, unable to delete.")
+            except PermissionError:
+                print(f"Permission denied for {e}, unable to delete.")
+            except Exception as ex:
+                print(f"An error occurred while deleting {e}: {ex}")
 
         self.clean_optional_plugins()
 
@@ -387,6 +394,7 @@ if __name__ == "__main__":
                 "nrunner = avocado.plugins.runner_nrunner:RunnerInit",
                 "testlogsui = avocado.plugins.testlogs:TestLogsUIInit",
                 "human = avocado.plugins.human:HumanInit",
+                "exec-runnables-recipe = avocado.plugins.resolvers:ExecRunnablesRecipeInit",
             ],
             "avocado.plugins.cli": [
                 "xunit = avocado.plugins.xunit:XUnitCLI",
@@ -454,6 +462,7 @@ if __name__ == "__main__":
                 "tap = avocado.plugins.resolvers:TapResolver",
                 "runnable-recipe = avocado.plugins.resolvers:RunnableRecipeResolver",
                 "runnables-recipe = avocado.plugins.resolvers:RunnablesRecipeResolver",
+                "exec-runnables-recipe = avocado.plugins.resolvers:ExecRunnablesRecipeResolver",
             ],
             "avocado.plugins.suite.runner": [
                 "nrunner = avocado.plugins.runner_nrunner:Runner",
