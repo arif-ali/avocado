@@ -1,5 +1,14 @@
+From: David Negreira <david.negreira@canonical.com>
+Date: Thu, 7 Nov 2024 16:49:59 +0000
+Subject: debian-fix-login-usr-bin
+
+Forwarded: not-needed
+---
+ selftests/unit/utils/software_manager.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
 diff --git a/selftests/unit/utils/software_manager.py b/selftests/unit/utils/software_manager.py
-index e034b05e..2d39b629 100644
+index e034b05..2d39b62 100644
 --- a/selftests/unit/utils/software_manager.py
 +++ b/selftests/unit/utils/software_manager.py
 @@ -18,7 +18,7 @@ def apt_supported_distro():
