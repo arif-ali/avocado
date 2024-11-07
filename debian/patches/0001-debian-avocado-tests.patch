@@ -2,6 +2,7 @@ From: Arif Ali <arif.ali@canonical.com>
 Date: Wed, 11 Sep 2024 19:20:15 +0100
 Subject: debian-avocado-tests
 
+Forwarded: not-needed
 ---
  examples/config/avocado-tests.conf | 4 ++++
  1 file changed, 4 insertions(+)

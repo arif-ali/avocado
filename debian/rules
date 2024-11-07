@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
-DH_VERBOSE = 1
-export PYBUILD_NAME = avocado-framework-103
+DH_VERBOSE=1
+export PYBUILD_NAME=avocado-framework
 export PYBUILD_INSTALL_ARGS=--install-layout=deb
 
 override_dh_auto_test:

@@ -17,7 +17,7 @@ Standards-Version: 4.7.0
 Rules-Requires-Root: no
 
 Package: python3-avocado
-Architecture: all
+Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}
 Description: Avocado is a set of tools and libraries to help with automated testing.
   One can call it a test framework with benefits.
