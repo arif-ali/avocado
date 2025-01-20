@@ -27,7 +27,7 @@
 
 Summary: Framework with tools and libraries for Automated Testing
 Name: python-avocado
-Version: 108.0
+Version: 109.0
 Release: 1%{?gitrel}%{?dist}
 License: GPLv2+ and GPLv2 and MIT
 URL: https://avocado-framework.github.io/
@@ -103,6 +103,10 @@ these days a framework) to perform automated testing.
 %build
 %if 0%{?rhel}
 sed -e 's/"PyYAML>=4.2b2"/"PyYAML>=3.12"/' -i optional_plugins/varianter_yaml_to_mux/setup.py
+%endif
+%if 0%{?fedora} >= 42
+sed -e '/"markupsafe<3.0.0"/d' -i optional_plugins/html/setup.py
+sed -e '/"markupsafe<3.0.0"/d' -i optional_plugins/ansible/setup.py
 %endif
 %py3_build
 pushd optional_plugins/html
@@ -232,6 +236,7 @@ PATH=%{buildroot}%{_bindir}:%{buildroot}%{_libexecdir}/avocado:$PATH \
 %{_bindir}/avocado-runner-tap
 %{_bindir}/avocado-runner-asset
 %{_bindir}/avocado-runner-package
+%{_bindir}/avocado-runner-pip
 %{_bindir}/avocado-runner-podman-image
 %{_bindir}/avocado-runner-sysinfo
 %{_bindir}/avocado-software-manager
@@ -465,6 +470,9 @@ Again Shell code (and possibly other similar shells).
 %{_libexecdir}/avocado*
 
 %changelog
+* Tue Jan 14 2025 Jan Richter <jarichte@redhat.com> - 109.0-1
+- New release
+
 * Mon Oct 07 2024 Jan Richter <jarichte@redhat.com> - 108.0-1
 - New release
 
