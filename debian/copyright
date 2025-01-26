@@ -3,11 +3,12 @@ Upstream-Name: Avocado Framework
 Source: https://avocado-framework.github.io/
 
 Files: *
-Copyright: PLACEHOLDER for The Avocado Team
+Copyright: (C) 2013-2024 Red Hat Inc.
 License: GPL-2+
 
 Files: debian/*
 Copyright: 2024 David Negreira <david.negreira@canonical.com>
+  2024-2025 Arif Ali <arif.ali@canonical.com>
 License: GPL-2+
 
 Files: avocado/core/main.py
@@ -49,14 +50,29 @@ Copyright: (C) 2013 Intel Corporation.
 License: GPL-2
 
 Files: avocado/core/tapparser.py
-  avocado/utils/external/gdbmi_parser.py
   avocado/utils/external/spark.py
-  optional_plugins/html/avocado_result_html/templates/bootstrap.min.css
-  optional_plugins/html/avocado_result_html/templates/bootstrap.min.js
-  selftests/.data/jenkins-junit.xsd
   selftests/unit/tap.py
-Copyright: PLACEHOLDER for the Avocado Team
+Copyright: (C) 2013-2024 Red Hat Inc.
 License: Expat
+
+Files: selftests/.data/jenkins-junit.xsd
+Copyright: (C) 2010 Thales Corporate Services SAS
+License: Expat
+
+Files: optional_plugins/html/avocado_result_html/templates/bootstrap.min.css
+  optional_plugins/html/avocado_result_html/templates/bootstrap.min.js
+Copyright: (C) 2011-2016 Twitter, Inc.
+License: Expat
+
+Files: avocado/utils/external/gdbmi_parser.py
+Copyright: (C) 2008 Michael Eddington
+License: Expat
+
+Files: avocado/utils/partition.py
+Copyright: (C) IBM 2016
+  (C) Red Hat Inc. 2016
+  (C) Google 2006-2008
+License: GPL-2+
 
 License: Expat
   Permission is hereby granted, free of charge, to any person obtaining
