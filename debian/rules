@@ -1,6 +1,7 @@
 #!/usr/bin/make -f
 export PYBUILD_NAME=avocado
 export PYBUILD_INSTALL_ARGS=--install-layout=deb
+export PY_SITEBUILD=/usr/lib/python3/dist-packages
 
 %:
 	dh $@ --with python3 --buildsystem=pybuild
@@ -23,3 +24,15 @@ override_dh_link:
 override_dh_clean:
 	rm -rf avocado/build
 	dh_clean
+
+override_dh_install:
+	dh_install
+	mkdir -p debian/${PYBUILD_NAME}/usr/libexec
+	mv debian/${PYBUILD_NAME}/usr/bin/avocado-* debian/${PYBUILD_NAME}/usr/libexec
+
+override_dh_python3:
+	dh_python3
+	mkdir -p debian/${PYBUILD_NAME}/usr/libexec/avocado
+	mv debian/${PYBUILD_NAME}${PY_SITEBUILD}/avocado/etc debian/${PYBUILD_NAME}/
+	mv debian/${PYBUILD_NAME}${PY_SITEBUILD}/avocado/libexec/* debian/${PYBUILD_NAME}/usr/libexec/avocado
+	rmdir debian/${PYBUILD_NAME}${PY_SITEBUILD}/avocado/libexec
