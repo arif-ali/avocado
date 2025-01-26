@@ -1,0 +1,23 @@
+From: Arif Ali <arif.ali@canonical.com>
+Date: Thu, 23 Jan 2025 09:03:35 +0000
+Subject: [PATCH] Fix bash-term-in-posix-shell in sleeptest
+
+Resolves: #6103
+Signed-off-by: Arif Ali <arif.ali@canonical.com>
+
+Origin: upstream, https://github.com/avocado-framework/avocado/commit/01efe2af2850645f1748de82a6955dafffbe01d4
+---
+ examples/tests/sleeptest.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/examples/tests/sleeptest.sh b/examples/tests/sleeptest.sh
+index f055251d..e84e2aae 100755
+--- a/examples/tests/sleeptest.sh
++++ b/examples/tests/sleeptest.sh
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+-if [[ -z ${SLEEP_LENGTH} ]]; then
++if [ -z ${SLEEP_LENGTH} ]; then
+   SLEEP_LENGTH=1
+ fi
+ 
