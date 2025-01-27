@@ -1,0 +1,82 @@
+From: David Negreira <david.negreira@canonical.com>
+Date: Fri, 13 Sep 2024 13:11:04 +0000
+Subject: [PATCH] Fix debian and Ubuntu version detection
+
+This fixes an issue with the Debian version information where it was
+retrieving a number instead of the codename.
+This also fixes an issue where the version of Ubuntu was incomplete and
+it was retrieving only the first part of it, rather than the full
+version.
+
+The unit test was failing on recent versions of Debian and Ubuntu
+because the `login` package is no longer installing the binary on
+`/bin/login` but rather on `/usr/bin/login`.
+
+We have added a function which will retrieve the binary path depending
+on the distro as well.
+
+Resolves: #6028
+
+Co-authored-by: David Negreira <david.negreira@canonical.com>
+Signed-off-by: David Negreira <david.negreira@canonical.com>
+Signed-off-by: Arif Ali <arif.ali@canonical.com>
+Forwarded: yes
+Origin: upstream, https://github.com/avocado-framework/avocado/commit/55d1cd3a143d3a9a5667458da1e3014a7bc46939
+---
+ avocado/utils/distro.py                  |  4 ++--
+ selftests/unit/utils/software_manager.py | 15 ++++++++++++++-
+ 2 files changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/avocado/utils/distro.py b/avocado/utils/distro.py
+index dcc25942..fa93e7b3 100644
+--- a/avocado/utils/distro.py
++++ b/avocado/utils/distro.py
+@@ -387,7 +387,7 @@ class DebianProbe(Probe):
+ 
+     CHECK_FILE = "/etc/debian_version"
+     CHECK_FILE_DISTRO_NAME = "debian"
+-    CHECK_VERSION_REGEX = re.compile(r"(\d+)\.(\d+)")
++    CHECK_VERSION_REGEX = re.compile(r".+/(.+)|(\d+)\.\d+")
+ 
+ 
+ class UbuntuProbe(Probe):
+@@ -399,7 +399,7 @@ class UbuntuProbe(Probe):
+     CHECK_FILE_CONTAINS = "ubuntu"
+     CHECK_FILE_DISTRO_NAME = "Ubuntu"
+     CHECK_VERSION_REGEX = re.compile(
+-        r".*VERSION_ID=\"(\d+)\.(\d+)\".*", re.MULTILINE | re.DOTALL
++        r".*VERSION_ID=\"(\d+\.\d+)\".*", re.MULTILINE | re.DOTALL
+     )
+ 
+ 
+diff --git a/selftests/unit/utils/software_manager.py b/selftests/unit/utils/software_manager.py
+index e034b05e..6bb8c2e4 100644
+--- a/selftests/unit/utils/software_manager.py
++++ b/selftests/unit/utils/software_manager.py
+@@ -13,12 +13,25 @@ def apt_supported_distro():
+     return distro.detect().name in ["debian", "Ubuntu"]
+ 
+ 
++def login_binary_path(distro_name, distro_version):
++    """Retrieve the login binary path based on the distro version"""
++    if distro_name == "Ubuntu":
++        if float(distro_version) >= 24.04:
++            return "/usr/bin/login"
++    if distro_name == "debian":
++        if distro_version == "sid" or int(distro_version) >= 14:
++            return "/usr/bin/login"
++    return "/bin/login"
++
++
+ @unittest.skipUnless(os.getuid() == 0, "This test requires root privileges")
+ @unittest.skipUnless(apt_supported_distro(), "Unsupported distro")
+ class Apt(unittest.TestCase):
+     def test_provides(self):
+         sm = manager.SoftwareManager()
+-        self.assertEqual(sm.provides("/bin/login"), "login")
++        _distro = distro.detect()
++        login_path = login_binary_path(_distro.name, _distro.version)
++        self.assertEqual(sm.provides(login_path), "login")
+         self.assertTrue(isinstance(sm.backend, backends.apt.AptBackend))
+ 
+ 
